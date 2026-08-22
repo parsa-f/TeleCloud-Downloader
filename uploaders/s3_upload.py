@@ -37,6 +37,13 @@ def upload_to_s3(file_path: str, chat_id: int, status_msg=None) -> str | None:
         print(f"[s3] upload failed: {e}")
         return None
 
+    # Custom public domain (PUBLIC_BASE_URL) → permanent pretty link.
+    # Fallback: presigned URL (7 days), works regardless of bucket privacy.
+    base = os.environ.get('PUBLIC_BASE_URL', '').strip().rstrip('/')
+    if base:
+        from urllib.parse import quote
+        return f"{base}/files/{chat_id}/{quote(fname)}"
+
     try:
         url = _client().generate_presigned_url(
             "get_object",
