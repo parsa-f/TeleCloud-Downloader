@@ -152,6 +152,13 @@ def callback_query(call):
         _handle_admin_user_panel(call, cid, data)
         return
 
+    # ── Destination picker (dest|tg / dest|gd / dest|s3 / dest|github) ──────
+    # The per-file picker builds callback_data "dest|<key>" (no prefix), which
+    # used to fall through every branch below and silently dead-end the button.
+    if data.startswith("dest|"):
+        _handle_dest_pick(call, cid, data)
+        return
+
     if data.startswith("set|"):
         parts  = data.split('|')
         action = parts[1]
@@ -671,6 +678,47 @@ def callback_query(call):
     if data.startswith("ytd|"):
         _handle_yt_dest(call, cid, data)
         return
+
+
+# =============================================================
+# Destination picker: dest|tg / dest|gd / dest|s3 / dest|github
+# =============================================================
+def _handle_dest_pick(call, cid, data):
+    import db as _db
+    from config import pending_uploads
+    choice = data.split("|", 1)[1]
+    if choice not in ("tg", "gd", "s3", "github"):
+        bot.answer_callback_query(call.id)
+        return
+
+    # Case A: a file is pending — upload it to the chosen destination NOW
+    pend = pending_uploads.pop(cid, None)
+    if pend:
+        fp = pend['fp']
+        bot.answer_callback_query(call.id, f"آپلود به: {choice}")
+        try:
+            bot.delete_message(cid, call.message.message_id)
+        except Exception:
+            pass
+        try:
+            status_msg = bot.send_message(cid, "⏳ آپلود...")
+            from uploaders.smart_dest import smart_dest
+            smart_dest(fp, status_msg, dest=choice, folder_name="FilesFromTel",
+                       task_info={'chat_id': cid, 'user_id': cid})
+        except Exception as e:
+            bot.send_message(cid, f"❌ خطا: {e}")
+        return
+
+    # Case B: no pending file — set default destination
+    _db.set_upload_dest(cid, choice)
+    bot.answer_callback_query(call.id, f"مقصد پیش‌فرض تنظیم شد: {choice}")
+    from menu import destination_pick_markup
+    try:
+        bot.edit_message_reply_markup(
+            cid, call.message.message_id,
+            reply_markup=destination_pick_markup(cid))
+    except Exception:
+        pass
 
 
 # =============================================================
