@@ -474,7 +474,23 @@ def handle_incoming_files(message):
             with open(fp, 'wb') as f:
                 f.write(data)
 
-        # Ask which destination to use for THIS file (per-file choice)
+        # If the user already set a default destination (not 'manual'), upload
+        # straight to it — no menu. Otherwise show the per-file picker.
+        from dest_helpers import should_ask_dest
+        import db as _db
+        if not should_ask_dest(cid):
+            default_dest = _db.get_upload_dest(cid)
+            try:
+                bot.edit_message_text(f"⏳ آپلود به: {default_dest}...", cid, status_msg.message_id)
+            except Exception:
+                pass
+            from uploaders.smart_dest import smart_dest
+            smart_dest(fp, status_msg, dest=default_dest, folder_name="FilesFromTel",
+                       task_info={'chat_id': cid, 'user_id': cid})
+            return
+
+        # Ask which destination to use for THIS file (per-file choice).
+        # Telegram option removed: the file is already in Telegram.
         from menu import destination_pick_markup
         config.pending_uploads[cid] = {'fp': fp, 'status_msg_id': status_msg.message_id}
         bot.edit_message_text(

@@ -88,10 +88,11 @@ def get_dest(cid) -> str:
 
 
 def should_ask_dest(cid) -> bool:
-    """Return True if the user has not yet chosen a destination."""
+    """Return True if the user has never explicitly chosen a destination."""
     import db
     try:
-        return db.get_upload_dest(cid) is None
+        row = db.get_user(cid)
+        return not (row and row["upload_dest"])
     except Exception:
         return True
 

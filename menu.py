@@ -149,8 +149,20 @@ def dest_pick_markup(cid=None, prefix: str = "dest", back: str = "set|back"):
 
 
 def destination_pick_markup(cid=None):
-    """Standalone menu: pick one of the 4 destinations explicitly."""
-    return dest_pick_markup(cid, prefix="dest", back="set|back")
+    """Standalone menu: pick one of the 3 destinations explicitly.
+    Telegram is excluded — files sent in chat are already in Telegram."""
+    import db
+    cur = db.get_upload_dest(cid) if cid else 'gd'
+    mk = types.InlineKeyboardMarkup(row_width=2)
+
+    def btn(key, label):
+        mark = "✅ " if cur == key else ""
+        return types.InlineKeyboardButton(mark + label, callback_data=f"dest|{key}")
+
+    mk.row(btn('gd', "☁️ Google Drive"), btn('s3', "🗄 Railway S3"))
+    mk.add(btn('github', "🐙 GitHub"))
+    mk.add(types.InlineKeyboardButton("🔙 بازگشت", callback_data="set|back"))
+    return mk
 
 
 def cancel_markup(cid=None):

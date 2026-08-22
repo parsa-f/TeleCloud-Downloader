@@ -81,18 +81,21 @@ def upload_file_to_telegram(file_path: str, status_msg, task_info=None):
         with open(file_path, 'rb') as f:
             name = os.path.basename(file_path)
             ext  = os.path.splitext(name)[1].lower()
+            # Caption: filename + origin line (e.g. "from Direct Link")
+            source = (task_info or {}).get('source', '')
+            caption = f"{name}\n🔗 از {source}" if source else name
             if ext in ('.mp4', '.mkv', '.avi', '.mov', '.webm'):
-                bot.send_video(chat_id, f, caption=name, timeout=upload_timeout)
+                bot.send_video(chat_id, f, caption=caption, timeout=upload_timeout)
             elif ext in _AUDIO_EXTS:
                 audio_title, performer = _audio_metadata_for_telegram(file_path, task_info, name)
-                kwargs = {'caption': name, 'timeout': upload_timeout}
+                kwargs = {'caption': caption, 'timeout': upload_timeout}
                 if audio_title:
                     kwargs['title'] = audio_title
                 if performer:
                     kwargs['performer'] = performer
                 bot.send_audio(chat_id, f, **kwargs)
             else:
-                bot.send_document(chat_id, f, caption=name, timeout=upload_timeout)
+                bot.send_document(chat_id, f, caption=caption, timeout=upload_timeout)
 
         # Edit status message to show final success state
         title   = task_info.get('title', name)[:45]

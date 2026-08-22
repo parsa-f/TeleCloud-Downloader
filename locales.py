@@ -991,6 +991,10 @@ STRINGS = {
         'fa': "💾 فضای دیسک کافی نیست! آزاد: {free}\n➡️ لطفاً با ادمین تماس بگیرید.",
         'en': "💾 Not enough disk space! Free: {free}\n➡️ Please contact the admin.",
     },
+    'err_yt_403': {
+        'fa': "🚫 یوتیوب دانلود این ویدیو رو مسدود کرده (403).\n➡️ چند دقیقه بعد دوباره امتحان کن یا کیفیت دیگه‌ای انتخاب کن.\n💡 اگه تکرار شد، کوکی تازهٔ یوتیوب اضافه کن.",
+        'en': "🚫 YouTube blocked this download (403).\n➡️ Try again in a few minutes or pick another quality.\n💡 If it repeats, add a fresh YouTube cookie.",
+    },
     'err_unsupported': {
         'fa': "🚫 این سایت پشتیبانی نمیشود.\n➡️ از گزینه 🌐 لینک مستقیم استفاده کنید.",
         'en': "🚫 This site is not supported.\n➡️ Use the 🌐 Direct Link option.",

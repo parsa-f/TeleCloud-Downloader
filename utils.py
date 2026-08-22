@@ -150,6 +150,12 @@ def friendly_error(err: str, get_free_space_fn=None, cid=None) -> str:
         free = get_free_space_fn() if get_free_space_fn else get_free_space()
         return (_t(cid, 'err_disk', free=free) if cid else
                 f"💾 فضای دیسک کافی نیست! آزاد: {free}\n➡️ لطفاً با ادمین تماس بگیرید.")
+    if 'unable to download video data' in e and '403' in e:
+        # YouTube throttling/PO-token issue — cookie alone doesn't fix it.
+        return (_t(cid, 'err_yt_403') if cid else
+                "🚫 یوتیوب دانلود این ویدیو رو مسدود کرده (403).\n"
+                "➡️ چند دقیقه بعد دوباره امتحان کن یا کیفیت دیگه‌ای انتخاب کن.\n"
+                "💡 اگه تکرار شد، کوکی تازهٔ یوتیوب اضافه کن.")
     if 'unsupported' in e or 'no extractor' in e:
         return _t(cid, 'err_unsupported') if cid else (
             "🚫 این سایت پشتیبانی نمیشود.\n"
