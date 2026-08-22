@@ -106,9 +106,8 @@ def process_direct_download(task):
             pass
 
         # ── Byte quota accounting ──────────────────────────────
-        if cid != ADMIN_ID:
-            real_size = os.path.getsize(fp) if os.path.isfile(fp) else 0
-            db.record_download_bytes(cid, real_size)
+        real_size = os.path.getsize(fp) if os.path.isfile(fp) else 0
+        db.record_download_bytes(cid, real_size)
 
         task_info = {
             'title': filename,

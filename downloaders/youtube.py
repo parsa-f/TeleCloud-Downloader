@@ -257,9 +257,8 @@ def process_youtube_download(task):
         except Exception: pass
 
         # ── Byte quota accounting ──────────────────────────────
-        if cid != ADMIN_ID:
-            real_size = os.path.getsize(file_path) if os.path.isfile(file_path) else 0
-            db.record_download_bytes(cid, real_size)
+        real_size = os.path.getsize(file_path) if os.path.isfile(file_path) else 0
+        db.record_download_bytes(cid, real_size)
 
         final_title = task.get('actual_title', title_kw)
         final_artist = None
@@ -462,9 +461,8 @@ def process_playlist_download(task):
 
             if fp and not task['_stop'].is_set():
                 # ── Byte quota accounting ──────────────────
-                if cid != ADMIN_ID:
-                    real_size = os.path.getsize(fp) if os.path.isfile(fp) else 0
-                    db.record_download_bytes(cid, real_size)
+                real_size = os.path.getsize(fp) if os.path.isfile(fp) else 0
+                db.record_download_bytes(cid, real_size)
                 sub = bot.send_message(chat_id, t(cid, 'uploading_item', idx=idx, total=total, name=os.path.basename(fp)))
                 item_info = task_info_base.copy()
                 item_info['title'] = os.path.basename(fp)

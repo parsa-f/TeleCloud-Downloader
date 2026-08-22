@@ -227,17 +227,16 @@ def _do_torrent_download(task, msg):
         base_name = os.path.splitext(display_name)[0][:40]
         is_folder = os.path.isdir(newest)
 
-        if cid != ADMIN_ID:
-            if is_folder:
-                real_size = 0
-                for root, _, files in os.walk(newest):
-                    for name in files:
-                        fpath = os.path.join(root, name)
-                        if os.path.isfile(fpath):
-                            real_size += os.path.getsize(fpath)
-            else:
-                real_size = os.path.getsize(newest) if os.path.isfile(newest) else 0
-            db.record_download_bytes(cid, real_size)
+        if is_folder:
+            real_size = 0
+            for root, _, files in os.walk(newest):
+                for name in files:
+                    fpath = os.path.join(root, name)
+                    if os.path.isfile(fpath):
+                        real_size += os.path.getsize(fpath)
+        else:
+            real_size = os.path.getsize(newest) if os.path.isfile(newest) else 0
+        db.record_download_bytes(cid, real_size)
 
         try:
             safe_tg_call(bot.edit_message_text, t(cid, 'torrent_preparing_upload'), chat_id, msg.message_id)

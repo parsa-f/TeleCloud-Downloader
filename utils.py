@@ -124,7 +124,12 @@ def build_rich_progress_card(status_icon: str, title: str, percent: float,
 def friendly_error(err: str, get_free_space_fn=None, cid=None) -> str:
     from locales import t as _t
     e = str(err).lower()
-    if any(k in e for k in ['login', 'sign in', '403', 'age', 'cookie', 'private']):
+    # Only claim "login required" when the error actually points to auth,
+    # not for any 403/private mention (YouTube uses those for rate-limits
+    # and unavailable videos even with valid cookies).
+    if ('sign in' in e or 'log in to view' in e or 'login required' in e
+            or 'cookies' in e.replace('cookiefile', '')
+            or 'confirm you' in e or ('age' in e and 'restricted' in e)):
         return _t(cid, 'err_login') if cid else (
             "🔒 محتوا نیاز به لاگین دارد.\n"
             "➡️ از منوی 🍪 مدیریت کوکی، کوکی سایت را اضافه کنید.")

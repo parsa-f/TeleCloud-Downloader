@@ -577,10 +577,15 @@ def record_download_bytes(user_id: int, file_size_bytes: int) -> None:
         return
     conn = _get_conn()
     cur = conn.cursor()
+    # Upsert so stats also work for users absent from the table (e.g. admin).
     cur.execute(
-        "UPDATE users SET bytes_downloaded=bytes_downloaded+?, "
-        "monthly_bytes_downloaded=monthly_bytes_downloaded+? WHERE user_id=?",
-        (file_size_bytes, file_size_bytes, user_id),
+        "INSERT INTO users (user_id, bytes_downloaded, monthly_bytes_downloaded, files_downloaded) "
+        "VALUES (?, ?, ?, 1) "
+        "ON CONFLICT(user_id) DO UPDATE SET "
+        "bytes_downloaded=users.bytes_downloaded+excluded.bytes_downloaded, "
+        "monthly_bytes_downloaded=users.monthly_bytes_downloaded+excluded.monthly_bytes_downloaded, "
+        "files_downloaded=users.files_downloaded+1",
+        (user_id, file_size_bytes, file_size_bytes),
     )
     conn.commit()
     record_download_event(user_id, file_size_bytes)
