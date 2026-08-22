@@ -280,8 +280,10 @@ def callback_query(call):
                 status_msg_id = pend['status_msg_id']
                 bot.answer_callback_query(call.id, f"آپلود به: {choice}")
                 try:
-                    bot.edit_message_text("⏳ در حال آپلود...", cid, status_msg_id,
-                                          reply_markup=None)
+                    bot.delete_message(cid, call.message.message_id)
+                except Exception:
+                    pass
+                try:
                     status_msg = bot.send_message(cid, "⏳ آپلود...")
                     # route through smart_dest with explicit dest
                     from uploaders.smart_dest import smart_dest

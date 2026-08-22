@@ -360,7 +360,7 @@ def set_github_repo(user_id: int, repo: str) -> None:
 
 
 def set_upload_dest(user_id: int, dest: str) -> None:
-    if dest not in ("tg", "s3", "github"):
+    if dest not in ("tg", "s3", "github", "gd"):
         dest = "tg"
     _run(
         "INSERT INTO users (user_id, upload_dest) VALUES (?, ?) "
