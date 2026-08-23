@@ -936,7 +936,7 @@ def _handle_youtube_link(message, cid, text):
     key = (cid, msg.message_id)
     with cache_lock:
         url_cache[key] = text
-    opts = {'extract_flat': True, 'quiet': True, 'js_runtimes': {'node': {}}}
+    opts = {'extract_flat': True, 'quiet': True, 'js_runtimes': {'deno': {}, 'node': {}}}
     cf   = active_cookies_file(text, cid)
     if cf:
         opts['cookiefile'] = cf
@@ -1332,7 +1332,7 @@ def _handle_social_link(message, cid, text):
         cf   = active_cookies_file(text, cid)
         # Bug 4a: dynamically decide noplaylist based on the URL structure.
         # SoundCloud /sets/ URLs are playlists and must not be truncated to 1 track.
-        opts = {'quiet': True, 'skip_download': True, 'noplaylist': _url_is_playlist(text), 'js_runtimes': {'node': {}}}
+        opts = {'quiet': True, 'skip_download': True, 'noplaylist': _url_is_playlist(text), 'js_runtimes': {'deno': {}, 'node': {}}}
         if cf:
             opts['cookiefile'] = cf
         try:
