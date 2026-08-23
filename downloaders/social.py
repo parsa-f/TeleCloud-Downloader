@@ -22,7 +22,7 @@ def _cancel_markup(cid=None):
 
 def _is_ytdlp_url(url: str) -> bool:
     try:
-        with yt_dlp.YoutubeDL({'quiet': True, 'js_runtimes': {'node': {}}}) as ydl:
+        with yt_dlp.YoutubeDL({'quiet': True, 'js_runtimes': {'deno': {}, 'node': {}}}) as ydl:
             for ie_cls in ydl._ies.values():
                 try:
                     if ie_cls.suitable(url) and ie_cls.IE_NAME not in ('generic', 'Generic'):
@@ -106,7 +106,7 @@ def ytdlp_universal(task):
         'progress_hooks':      [hook],
         'quiet':               True,
         'no_warnings':         True,
-        'js_runtimes':         {'node': {}},
+        'js_runtimes':         {'deno': {}, 'node': {}},
         'windowsfilenames':    True,
         # Bug 4a: False for SoundCloud /sets/ so the whole album downloads,
         # True for single-item URLs (the safe default for all other platforms).

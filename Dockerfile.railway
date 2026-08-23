@@ -9,7 +9,7 @@ ENV PYTHONUNBUFFERED=1
 # system deps + ffmpeg + aria2 + rclone + node (for yt-dlp js runtime)
 # libstdc++ is required by the telegram-bot-api binary
 RUN apk add --no-cache \
-    ffmpeg aria2 curl unzip nodejs libstdc++ ca-certificates git \
+    ffmpeg aria2 curl unzip nodejs deno libstdc++ ca-certificates git \
     postgresql-dev postgresql-libs gcc musl-dev libpq
 
 # rclone
@@ -29,7 +29,7 @@ RUN pip install --no-cache-dir -r /tmp/requirements.txt
 COPY . /app
 
 # yt-dlp node js runtime
-RUN mkdir -p /root/.config/yt-dlp && echo '--js-runtimes node' > /root/.config/yt-dlp/config
+RUN mkdir -p /root/.config/yt-dlp && echo '--js-runtimes deno,node' > /root/.config/yt-dlp/config
 
 EXPOSE 8081
 CMD ["sh", "/app/start_railway.sh"]

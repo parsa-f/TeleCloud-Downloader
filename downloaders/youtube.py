@@ -31,7 +31,7 @@ def get_format_sizes(url: str, cid=None) -> dict:
     opts  = {
         'quiet': True,
         'skip_download': True,
-        'js_runtimes': {'node': {}},
+        'js_runtimes': {'deno': {}, 'node': {}},
     }
     if cf: opts['cookiefile'] = cf
     try:
@@ -142,7 +142,7 @@ def _build_ydl_opts(task: dict, folder: str, hook) -> dict:
         'writethumbnail':      audio_only,
         'quiet':               True,
         'no_warnings':         True,
-        'js_runtimes':         {'node': {}},
+        'js_runtimes':         {'deno': {}, 'node': {}},
         'windowsfilenames':    True,
         'concurrent_fragment_downloads': 4,
         'throttledratelimit':           100000,
@@ -343,7 +343,7 @@ def fetch_playlist_entries(url: str, cf=None) -> tuple:
         'quiet': True,
         'skip_download': True,
         'extract_flat': True,
-        'js_runtimes': {'node': {}},
+        'js_runtimes': {'deno': {}, 'node': {}},
     }
     if cf: opts['cookiefile'] = cf
     with yt_dlp.YoutubeDL(opts) as ydl:
@@ -440,7 +440,7 @@ def process_playlist_download(task):
             'merge_output_format': merge_fmt,
             'quiet':               True,
             'no_warnings':         True,
-            'js_runtimes':         {'node': {}},
+            'js_runtimes':         {'deno': {}, 'node': {}},
             'windowsfilenames':    True,
             'concurrent_fragment_downloads': 4,
             'throttledratelimit':           100000,
