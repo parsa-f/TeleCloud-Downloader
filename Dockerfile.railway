@@ -12,11 +12,9 @@ RUN apk add --no-cache \
     ffmpeg aria2 curl unzip nodejs libstdc++ ca-certificates git \
     postgresql-dev postgresql-libs gcc musl-dev libpq
 
-# deno (official binary) — yt-dlp 2026.8+ EJS requires a modern JS runtime
-ARG DENO_VERSION=2.1.4
-RUN curl -fsSL https://github.com/denoland/deno/releases/download/v${DENO_VERSION}/deno-x86_64-unknown-linux-gnu.zip -o /tmp/deno.zip \
-    && unzip -o /tmp/deno.zip -d /usr/local/bin \
-    && chmod +x /usr/local/bin/deno && rm /tmp/deno.zip
+# deno — yt-dlp 2026.8+ EJS requires it; alpine's main repo has an old deno,
+# so pull the current one from alpine edge (musl-compatible).
+RUN apk add --no-cache --repository=https://dl-cdn.alpinelinux.org/alpine/edge/community deno
 
 # rclone
 RUN curl -fsSL https://downloads.rclone.org/rclone-current-linux-amd64.zip -o /tmp/rclone.zip \
