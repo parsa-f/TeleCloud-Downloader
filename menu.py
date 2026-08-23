@@ -130,20 +130,21 @@ def settings_inline_markup(cid=None):
 
 def dest_pick_markup(cid=None, prefix: str = "dest", back: str = "set|back"):
     """
-    Generic 4-destination picker. `prefix` lets callers namespace the
-    callback (e.g. 'dest' for file upload, 'ytd' for youtube, 'tor' for torrent).
-    All callbacks become:  <prefix>|<key>   where key ∈ tg|gd|s3|github
+    Per-download destination picker (links/youtube/torrent).
+    Telegram removed — for chat files the file is already in Telegram;
+    downloaded files go to a cloud destination or get asked per file.
+    All callbacks become:  <prefix>|<key>   where key ∈ gd|s3|github
     """
     import db
-    cur = db.get_upload_dest(cid) if cid else 'tg'
+    cur = db.get_upload_dest(cid) if cid else 'gd'
     mk = types.InlineKeyboardMarkup(row_width=2)
 
     def btn(key, label):
         mark = "✅ " if cur == key else ""
         return types.InlineKeyboardButton(mark + label, callback_data=f"{prefix}|{key}")
 
-    mk.row(btn('tg', "📤 تلگرام"), btn('gd', "☁️ Google Drive"))
-    mk.row(btn('s3', "🗄 Railway S3"), btn('github', "🐙 GitHub"))
+    mk.row(btn('gd', "☁️ Google Drive"), btn('s3', "🗄 Railway S3"))
+    mk.add(btn('github', "🐙 GitHub"))
     mk.add(types.InlineKeyboardButton("🔙 بازگشت", callback_data=back))
     return mk
 

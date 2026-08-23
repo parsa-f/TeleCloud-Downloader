@@ -76,15 +76,13 @@ _SUBTITLE_LOCALE = {
 # =============================================================
 
 def get_dest(cid) -> str:
-    """Return the user's default upload destination (persisted in Postgres)."""
+    """User's default cloud destination; NULL/legacy 'tg' resolves to gd."""
     import db
     try:
         d = db.get_upload_dest(cid)
-        return d
+        return d if d in ('gd', 's3', 'github') else 'gd'
     except Exception:
-        # fallback: admin defaults to tg, others to gd (original behaviour)
-        from config import ADMIN_ID
-        return 'tg' if cid == ADMIN_ID else 'gd'
+        return 'gd'
 
 
 def should_ask_dest(cid) -> bool:

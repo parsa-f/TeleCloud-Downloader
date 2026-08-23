@@ -201,6 +201,14 @@ def init_db() -> None:
             )
             conn.commit()
             _ensure_users_columns(conn)
+            # Migration: legacy 'tg' default is retired — NULL means "ask per file".
+            try:
+                cur2 = conn.cursor()
+                cur2.execute(
+                    "UPDATE users SET upload_dest=NULL WHERE upload_dest='tg'")
+                conn.commit()
+            except Exception:
+                pass
 
 
 def _normalize_username(username):
