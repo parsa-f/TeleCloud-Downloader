@@ -78,7 +78,7 @@ def settings_inline_markup(cid=None):
         import db
         d = db.get_upload_dest(cid)
         if d == 'tg':
-            upload_label = t(cid, 'btn_upload_tg')
+            upload_label = t(cid, 'btn_upload_tg')  # legacy value; treated as "ask"
         elif d == 'gd':
             upload_label = t(cid, 'btn_upload_gd')
         elif d == 's3':
@@ -149,16 +149,18 @@ def dest_pick_markup(cid=None, prefix: str = "dest", back: str = "set|back"):
 
 
 def destination_pick_markup(cid=None):
-    """Standalone menu: pick one of the 3 destinations explicitly.
-    Telegram is excluded — files sent in chat are already in Telegram."""
+    """Settings menu: default upload destination — Ask (per-file) + 3 cloud
+    destinations. Telegram excluded: files sent in chat are already there."""
     import db
-    cur = db.get_upload_dest(cid) if cid else 'gd'
+    cur = db.get_upload_dest(cid) if cid else None
     mk = types.InlineKeyboardMarkup(row_width=2)
 
     def btn(key, label):
         mark = "✅ " if cur == key else ""
         return types.InlineKeyboardButton(mark + label, callback_data=f"dest|{key}")
 
+    ask_mark = "✅ " if cur not in ('gd', 's3', 'github') else ""
+    mk.add(types.InlineKeyboardButton(ask_mark + "❓ پرسیده شود", callback_data="dest|ask"))
     mk.row(btn('gd', "☁️ Google Drive"), btn('s3', "🗄 Railway S3"))
     mk.add(btn('github', "🐙 GitHub"))
     mk.add(types.InlineKeyboardButton("🔙 بازگشت", callback_data="set|back"))

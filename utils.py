@@ -128,11 +128,11 @@ def friendly_error(err: str, get_free_space_fn=None, cid=None) -> str:
     # not for any 403/private mention (YouTube uses those for rate-limits
     # and unavailable videos even with valid cookies).
     if ('sign in' in e or 'log in to view' in e or 'login required' in e
-            or 'cookies' in e.replace('cookiefile', '')
             or 'confirm you' in e or ('age' in e and 'restricted' in e)):
-        return _t(cid, 'err_login') if cid else (
-            "🔒 محتوا نیاز به لاگین دارد.\n"
-            "➡️ از منوی 🍪 مدیریت کوکی، کوکی سایت را اضافه کنید.")
+        return _t(cid, 'err_login_fresh') if cid else (
+            "🔒 یوتیوب میگه لاگین لازمه.\n"
+            "➡️ کوکی تازه بگیر: از مرورگر لاگین کن → cookies.txt خروجی بگیر → از منوی 🍪 بفرست.\n"
+            "💡 کوکی قدیمی/منقضی هم همین خطا رو میده — اگه قبلاً کوکی دادی، پاکش کن و جدید بفرست.")
     if '404' in e or 'not found' in e:
         return _t(cid, 'err_404') if cid else (
             "🔗 لینک پیدا نشد (404).\n"

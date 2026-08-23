@@ -369,6 +369,15 @@ def set_upload_dest(user_id: int, dest: str) -> None:
     )
 
 
+def clear_upload_dest(user_id: int) -> None:
+    """Reset destination to per-file asking (NULL)."""
+    _run(
+        "INSERT INTO users (user_id, upload_dest) VALUES (?, NULL) "
+        "ON CONFLICT(user_id) DO UPDATE SET upload_dest=NULL",
+        (user_id,),
+    )
+
+
 def get_upload_dest(user_id: int) -> str:
     row = get_user(user_id)
     if not row:

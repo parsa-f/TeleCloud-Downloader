@@ -92,7 +92,7 @@ def should_ask_dest(cid) -> bool:
     import db
     try:
         row = db.get_user(cid)
-        return not (row and row["upload_dest"])
+        return not (row and row["upload_dest"])  # NULL/absent = ask per file
     except Exception:
         return True
 

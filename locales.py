@@ -995,6 +995,10 @@ STRINGS = {
         'fa': "🚫 یوتیوب دانلود این ویدیو رو مسدود کرده (403).\n➡️ چند دقیقه بعد دوباره امتحان کن یا کیفیت دیگه‌ای انتخاب کن.\n💡 اگه تکرار شد، کوکی تازهٔ یوتیوب اضافه کن.",
         'en': "🚫 YouTube blocked this download (403).\n➡️ Try again in a few minutes or pick another quality.\n💡 If it repeats, add a fresh YouTube cookie.",
     },
+    'err_login_fresh': {
+        'fa': "🔒 یوتیوب میگه لاگین لازمه.\n➡️ کوکی تازه بگیر: از مرورگر لاگین کن، افزونهٔ «Get cookies.txt LOCALLY» رو نصب کن، خروجی بگیر و از منوی 🍪 بفرست.\n💡 کوکی قدیمی/منقضی هم همین خطا میده — پاکش کن و جدید بفرست.",
+        'en': "🔒 YouTube says login is required.\n➡️ Get a fresh cookie: log in via browser, export cookies.txt with the \"Get cookies.txt LOCALLY\" extension, send it via the 🍪 menu.\n💡 An old/expired cookie gives this too — delete it and send a new one.",
+    },
     'err_unsupported': {
         'fa': "🚫 این سایت پشتیبانی نمیشود.\n➡️ از گزینه 🌐 لینک مستقیم استفاده کنید.",
         'en': "🚫 This site is not supported.\n➡️ Use the 🌐 Direct Link option.",

@@ -687,7 +687,18 @@ def _handle_dest_pick(call, cid, data):
     import db as _db
     from config import pending_uploads
     choice = data.split("|", 1)[1]
-    if choice not in ("tg", "gd", "s3", "github"):
+    if choice == "ask":
+        # Reset to per-file asking (no stored default).
+        _db.clear_upload_dest(cid)
+        bot.answer_callback_query(call.id, "هر فایل مقصد پرسیده میشه")
+        from menu import destination_pick_markup
+        try:
+            bot.edit_message_reply_markup(cid, call.message.message_id,
+                                          reply_markup=destination_pick_markup(cid))
+        except Exception:
+            pass
+        return
+    if choice not in ("gd", "s3", "github"):
         bot.answer_callback_query(call.id)
         return
 
