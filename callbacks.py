@@ -804,11 +804,13 @@ def _enqueue_playlist(call, cid, url, mid, end_idx, audio, quality):
     else:
         dest_mk = types.InlineKeyboardMarkup()
         dest_mk.row(
-            types.InlineKeyboardButton(t(cid, 'btn_tg'),
-                callback_data=f"pld|{end_idx}|tg|{mid}|{'1' if audio else '0'}|{quality}"),
+            types.InlineKeyboardButton('🗄 S3',
+                callback_data=f"pld|{end_idx}|s3|{mid}|{'1' if audio else '0'}|{quality}"),
             types.InlineKeyboardButton(t(cid, 'btn_gd'),
                 callback_data=f"pld|{end_idx}|gd|{mid}|{'1' if audio else '0'}|{quality}"),
         )
+        dest_mk.add(types.InlineKeyboardButton("🐙 GitHub",
+            callback_data=f"pld|{end_idx}|github|{mid}|{'1' if audio else '0'}|{quality}"))
         count_str = str(end_idx) if end_idx < 9999 else t(cid, 'playlist_all_btn')
         if audio:
             media_label = t(cid, 'playlist_media_audio')
@@ -1029,11 +1031,13 @@ def _handle_scpl_count(call, cid, data):
     else:
         dest_mk = types.InlineKeyboardMarkup()
         dest_mk.row(
-            types.InlineKeyboardButton(t(cid, 'btn_tg'),
-                callback_data=f"scpl_dest|{mid}|{count}|tg"),
+            types.InlineKeyboardButton('🗄 S3',
+                callback_data=f"scpl_dest|{mid}|{count}|s3"),
             types.InlineKeyboardButton(t(cid, 'btn_gd'),
                 callback_data=f"scpl_dest|{mid}|{count}|gd"),
         )
+        dest_mk.add(types.InlineKeyboardButton("🐙 GitHub",
+            callback_data=f"scpl_dest|{mid}|{count}|github"))
         count_display = t(cid, 'playlist_all_btn') if count == 'all' else count
         try:
             bot.edit_message_text(

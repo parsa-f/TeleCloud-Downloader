@@ -974,7 +974,7 @@ def _handle_youtube_link(message, cid, text):
                 if should_ask_dest(cid):
                     dest_mk = types.InlineKeyboardMarkup()
                     dest_mk.row(
-                        types.InlineKeyboardButton(t(cid, 'btn_tg'), callback_data=f"ytd|audio|tg|{msg.message_id}"),
+                        types.InlineKeyboardButton('🗄 S3', callback_data=f"ytd|audio|s3|{msg.message_id}"),
                         types.InlineKeyboardButton(t(cid, 'btn_gd'), callback_data=f"ytd|audio|gd|{msg.message_id}"),
                     )
                     bot.edit_message_text(
@@ -1220,8 +1220,8 @@ def _handle_scpl_custom_count(cid, text, state):
     else:
         dest_mk = types.InlineKeyboardMarkup()
         dest_mk.row(
-            types.InlineKeyboardButton(t(cid, 'btn_tg'),
-                callback_data=f"scpl_dest|{mid}|{count}|tg"),
+            types.InlineKeyboardButton('🗄 S3',
+                callback_data=f"scpl_dest|{mid}|{count}|s3"),
             types.InlineKeyboardButton(t(cid, 'btn_gd'),
                 callback_data=f"scpl_dest|{mid}|{count}|gd"),
         )
@@ -1259,8 +1259,8 @@ def _handle_social_link(message, cid, text):
         if should_ask_dest(cid):
             dest_mk = types.InlineKeyboardMarkup()
             dest_mk.row(
-                types.InlineKeyboardButton(t(cid, 'btn_tg'),
-                    callback_data=f"scd|a|bestaudio/best|tg|{msg.message_id}"),
+                types.InlineKeyboardButton('🗄 S3',
+                    callback_data=f"scd|a|bestaudio/best|s3|{msg.message_id}"),
                 types.InlineKeyboardButton(t(cid, 'btn_gd'),
                     callback_data=f"scd|a|bestaudio/best|gd|{msg.message_id}"),
             )
@@ -1297,8 +1297,8 @@ def _handle_social_link(message, cid, text):
         if should_ask_dest(cid):
             dest_mk = types.InlineKeyboardMarkup()
             dest_mk.row(
-                types.InlineKeyboardButton(t(cid, 'btn_tg'),
-                    callback_data=f"scd|v|{fmt}|tg|{msg.message_id}"),
+                types.InlineKeyboardButton('🗄 S3',
+                    callback_data=f"scd|v|{fmt}|s3|{msg.message_id}"),
                 types.InlineKeyboardButton(t(cid, 'btn_gd'),
                     callback_data=f"scd|v|{fmt}|gd|{msg.message_id}"),
             )
@@ -1438,8 +1438,8 @@ def _handle_playlist_count(cid, text, state):
         media = t(cid, 'playlist_media_audio') if audio else t(cid, 'playlist_media_video', quality=quality)
         dest_mk = types.InlineKeyboardMarkup()
         dest_mk.row(
-            types.InlineKeyboardButton(t(cid, 'btn_tg'),
-                callback_data=f"pld|{count}|tg|{mid}|{'1' if audio else '0'}|{quality}"),
+            types.InlineKeyboardButton('🗄 S3',
+                callback_data=f"pld|{count}|s3|{mid}|{'1' if audio else '0'}|{quality}"),
             types.InlineKeyboardButton(t(cid, 'btn_gd'),
                 callback_data=f"pld|{count}|gd|{mid}|{'1' if audio else '0'}|{quality}"),
         )
