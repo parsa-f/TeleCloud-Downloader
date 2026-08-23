@@ -136,7 +136,7 @@ def dest_pick_markup(cid=None, prefix: str = "dest", back: str = "set|back"):
     All callbacks become:  <prefix>|<key>   where key ∈ gd|s3|github
     """
     import db
-    cur = db.get_upload_dest(cid) if cid else 'gd'
+    cur = db.get_upload_dest(cid) if cid else 'ask'
     mk = types.InlineKeyboardMarkup(row_width=2)
 
     def btn(key, label):

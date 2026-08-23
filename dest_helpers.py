@@ -84,9 +84,9 @@ def get_dest(cid) -> str:
         d = db.get_upload_dest(cid)
         if d == 'gd' and cid and not Path(USER_CONFIGS_DIR, f"rclone_{cid}.conf").exists():
             return 'ask'
-        return d if d in ('gd', 's3', 'github') else 'gd'
+        return d if d in ('gd', 's3', 'github') else 'ask'
     except Exception:
-        return 'gd'
+        return 'ask'
 
 
 def has_drive(cid) -> bool:
