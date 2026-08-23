@@ -24,6 +24,36 @@ def _client():
     )
 
 
+# ponytail: env-config cap; per-user quotas if this ever becomes a hotspot
+BUCKET_MAX_BYTES = int(os.environ.get('BUCKET_MAX_GB', '5')) * 1024 ** 3
+
+
+def _evict_oldest_if_full(client, incoming_bytes: int):
+    """If bucket usage + incoming exceeds the cap, delete oldest objects
+    until there's room. Keeps the newest files, evicts the oldest first."""
+    try:
+        paginator = client.get_paginator('list_objects_v2')
+        objs = []
+        total = 0
+        for page in paginator.paginate(Bucket=AWS_BUCKET_NAME):
+            for o in page.get('Contents', []):
+                objs.append({'Key': o['Key'], 'Size': o['Size'],
+                             'LastModified': o['LastModified']})
+                total += o['Size']
+        if total + incoming_bytes <= BUCKET_MAX_BYTES:
+            return
+        freed = 0
+        need = total + incoming_bytes - BUCKET_MAX_BYTES
+        for o in sorted(objs, key=lambda x: x['LastModified']):
+            if freed >= need:
+                break
+            client.delete_object(Bucket=AWS_BUCKET_NAME, Key=o['Key'])
+            freed += o['Size']
+        print(f"[s3] evicted {freed/1e6:.0f}MB of old objects to make room")
+    except Exception as e:
+        print(f"[s3] evict failed (non-fatal): {e}")
+
+
 def upload_to_s3(file_path: str, chat_id: int, status_msg=None) -> str | None:
     """Upload file_path to the bucket, return a presigned download URL or None."""
     if not AWS_BUCKET_NAME:
@@ -31,6 +61,7 @@ def upload_to_s3(file_path: str, chat_id: int, status_msg=None) -> str | None:
     fname = os.path.basename(file_path)
     # object key: files/<chat_id>/<filename>
     key = f"files/{chat_id}/{fname}"
+    _evict_oldest_if_full(_client(), os.path.getsize(file_path))
     try:
         _client().upload_file(file_path, AWS_BUCKET_NAME, key)
     except Exception as e:
