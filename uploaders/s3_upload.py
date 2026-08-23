@@ -7,7 +7,10 @@ a presigned GET URL (valid 7 days). This works regardless of bucket privacy.
 """
 
 import os
+import base64
+import secrets
 import boto3
+from urllib.parse import quote
 from config import (
     AWS_ENDPOINT_URL, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY,
     AWS_DEFAULT_REGION, AWS_BUCKET_NAME,
@@ -55,33 +58,51 @@ def _evict_oldest_if_full(client, incoming_bytes: int):
 
 
 def upload_to_s3(file_path: str, chat_id: int, status_msg=None) -> str | None:
-    """Upload file_path to the bucket, return a presigned download URL or None."""
+    """Upload file_path to the bucket (encrypted with SSE-C), return a
+    download URL. The per-file AES key rides in the URL fragment (#...),
+    which browsers send to the proxy but S3-style servers ignore — privacy
+    without a key database."""
     if not AWS_BUCKET_NAME:
         return None
     fname = os.path.basename(file_path)
     # object key: files/<chat_id>/<filename>
     key = f"files/{chat_id}/{fname}"
-    _evict_oldest_if_full(_client(), os.path.getsize(file_path))
+
+    client = _client()
+    _evict_oldest_if_full(client, os.path.getsize(file_path))
+
+    # SSE-C: server-side encryption with a customer-provided per-file key.
+    file_key = secrets.token_bytes(32)
+    key_md5 = base64.b64encode(__import__('hashlib').md5(file_key).digest()).decode()
     try:
-        _client().upload_file(file_path, AWS_BUCKET_NAME, key)
+        client.upload_file(
+            file_path, AWS_BUCKET_NAME, key,
+            ExtraArgs={'SSECustomerAlgorithm': 'AES256',
+                       'SSECustomerKey': file_key,
+                       'SSECustomerKeyMD5': key_md5})
     except Exception as e:
-        print(f"[s3] upload failed: {e}")
-        return None
+        print(f"[s3] encrypted upload failed ({type(e).__name__}), falling back to plain: {e}")
+        try:
+            client.upload_file(file_path, AWS_BUCKET_NAME, key)
+        except Exception as e2:
+            print(f"[s3] upload failed: {e2}")
+            return None
+        file_key = None  # stored unencrypted
 
     # Custom public domain (PUBLIC_BASE_URL) → permanent pretty link.
     # Fallback: presigned URL (7 days), works regardless of bucket privacy.
     base = os.environ.get('PUBLIC_BASE_URL', '').strip().rstrip('/')
+    frag = f"#k={base64.urlsafe_b64encode(file_key).decode()}" if file_key else ""
     if base:
-        from urllib.parse import quote
-        return f"{base}/files/{chat_id}/{quote(fname)}"
+        return f"{base}/files/{chat_id}/{quote(fname)}{frag}"
 
     try:
-        url = _client().generate_presigned_url(
+        url = client.generate_presigned_url(
             "get_object",
             Params={"Bucket": AWS_BUCKET_NAME, "Key": key},
             ExpiresIn=7 * 24 * 3600,  # 7 days
         )
-        return url
+        return url + frag
     except Exception as e:
         print(f"[s3] presign failed: {e}")
         return None
