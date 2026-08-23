@@ -55,7 +55,20 @@ def smart_dest(file_path: str, status_msg, dest: str = None, folder_name: str = 
         url = upload_to_github(file_path, chat_id, status_msg)
         _reply_link(status_msg, url, "GitHub", cid)
     else:
-        # gdrive (default for users who connected Drive)
+        # gdrive — if the user never connected Drive, say so clearly instead
+        # of a raw rclone traceback.
+        from pathlib import Path
+        from config import USER_CONFIGS_DIR
+        if not Path(USER_CONFIGS_DIR, f"rclone_{cid}.conf").exists():
+            try:
+                bot.edit_message_text(
+                    "☁️ برای آپلود به Google Drive اول باید وصلش کنی:\n"
+                    "تنظیمات → ☁️ اتصال گوگل درایو\n\n"
+                    "یا مقصد دیگه‌ای (S3 / GitHub / تلگرام) انتخاب کن.",
+                    cid, status_msg.message_id)
+            except Exception:
+                pass
+            return
         upload_to_gdrive_cancellable(file_path, status_msg, folder_name, False, task_info)
 
 

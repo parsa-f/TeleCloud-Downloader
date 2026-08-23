@@ -76,13 +76,24 @@ _SUBTITLE_LOCALE = {
 # =============================================================
 
 def get_dest(cid) -> str:
-    """User's default cloud destination; NULL/legacy 'tg' resolves to gd."""
+    """User's default destination. gd without connected Drive falls back to ask."""
     import db
+    from pathlib import Path
+    from config import USER_CONFIGS_DIR
     try:
         d = db.get_upload_dest(cid)
+        if d == 'gd' and cid and not Path(USER_CONFIGS_DIR, f"rclone_{cid}.conf").exists():
+            return 'ask'
         return d if d in ('gd', 's3', 'github') else 'gd'
     except Exception:
         return 'gd'
+
+
+def has_drive(cid) -> bool:
+    import os
+    from pathlib import Path
+    from config import USER_CONFIGS_DIR
+    return bool(cid) and Path(USER_CONFIGS_DIR, f"rclone_{cid}.conf").exists()
 
 
 def should_ask_dest(cid) -> bool:
