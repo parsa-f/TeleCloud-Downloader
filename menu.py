@@ -143,7 +143,11 @@ def dest_pick_markup(cid=None, prefix: str = "dest", back: str = "set|back"):
         mark = "✅ " if cur == key else ""
         return types.InlineKeyboardButton(mark + label, callback_data=f"{prefix}|{key}")
 
-    mk.row(btn('gd', "☁️ Google Drive"), btn('s3', "🗄 Railway S3"))
+    # Warn (don't block) if this user hasn't connected Google Drive.
+    from pathlib import Path as _P
+    has_gd = cid and _P(USER_CONFIGS_DIR, f"rclone_{cid}.conf").exists()
+    mk.row(btn('gd', "☁️ Google Drive" + ("" if has_gd else " ⚠️")),
+           btn('s3', "🗄 Railway S3"))
     mk.add(btn('github', "🐙 GitHub"))
     mk.add(types.InlineKeyboardButton("🔙 بازگشت", callback_data=back))
     return mk
