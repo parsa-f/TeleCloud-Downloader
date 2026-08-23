@@ -685,8 +685,28 @@ def callback_query(call):
 # =============================================================
 def _handle_dest_pick(call, cid, data):
     import db as _db
-    from config import pending_uploads
+    from config import pending_uploads, gdrive_redirects
     choice = data.split("|", 1)[1]
+
+    # Case A2: a download finished but Drive wasn't connected — re-route it.
+    redir = gdrive_redirects.pop(cid, None)
+    if redir and choice in ("tg", "s3", "github"):
+        bot.answer_callback_query(call.id, f"آپلود به: {choice}")
+        try:
+            bot.delete_message(cid, call.message.message_id)
+        except Exception:
+            pass
+        try:
+            status_msg = bot.send_message(cid, "⏳ آپلود...")
+            from uploaders.smart_dest import smart_dest
+            smart_dest(redir['fp'], status_msg, dest=choice,
+                       folder_name=redir.get('folder_name'),
+                       task_info=redir.get('task_info'))
+        except Exception as e:
+            bot.send_message(cid, f"❌ خطا: {e}")
+        return
+    if redir:
+        gdrive_redirects[cid] = redir  # 'gd' picked again — keep stash
     if choice == "ask":
         # Reset to per-file asking (no stored default).
         _db.clear_upload_dest(cid)

@@ -60,12 +60,16 @@ def smart_dest(file_path: str, status_msg, dest: str = None, folder_name: str = 
         from pathlib import Path
         from config import USER_CONFIGS_DIR
         if not Path(USER_CONFIGS_DIR, f"rclone_{cid}.conf").exists():
+            # Stash the file so the destination-pick callback can upload it.
+            from config import gdrive_redirects
+            gdrive_redirects[cid] = {'fp': file_path, 'folder_name': folder_name,
+                                     'task_info': task_info}
+            from menu import dest_pick_markup
             try:
                 bot.edit_message_text(
-                    "☁️ برای آپلود به Google Drive اول باید وصلش کنی:\n"
-                    "تنظیمات → ☁️ اتصال گوگل درایو\n\n"
-                    "یا مقصد دیگه‌ای (S3 / GitHub / تلگرام) انتخاب کن.",
-                    cid, status_msg.message_id)
+                    "☁️ Google Drive وصل نیست. مقصد دیگه‌ای انتخاب کن:",
+                    cid, status_msg.message_id,
+                    reply_markup=dest_pick_markup(cid))
             except Exception:
                 pass
             return

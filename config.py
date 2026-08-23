@@ -51,6 +51,7 @@ ADMIN_ID = int(os.environ.get('ADMIN_ID', '0'))
 
 # Default upload destination is Telegram (2GB via Local Bot API).
 # Users start in tg_upload_mode; they can switch to Drive from the menu.
+gdrive_redirects = {}  # cid -> {fp, folder_name, task_info} when gd chosen w/o Drive
 tg_upload_mode = set()
 if ADMIN_ID > 0:
     tg_upload_mode.add(ADMIN_ID)
