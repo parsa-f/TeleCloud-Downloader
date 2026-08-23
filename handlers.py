@@ -1508,3 +1508,29 @@ def _send_profile_stats(cid: int) -> None:
           monthly_files=monthly_files_used, max_monthly_files=max_monthly_files,
           monthly_used_gb=monthly_used_gb, monthly_max_gb=monthly_max_gb),
     )
+
+
+@bot.message_handler(commands=['diag'])
+def cmd_diag(message):
+    cid = message.chat.id
+    import yt_dlp, shutil, sys
+    lines = ["🔧 Diagnostic:"]
+    try:
+        lines.append(f"• yt-dlp: {yt_dlp.version.__version__}")
+    except Exception:
+        lines.append("• yt-dlp: ?")
+    dpath = shutil.which('deno')
+    lines.append(f"• deno path: {dpath or 'NOT FOUND'}")
+    if dpath:
+        import subprocess
+        r = subprocess.run([dpath, '--version'], capture_output=True, text=True, timeout=10)
+        lines.append(f"• deno ver: {r.stdout.splitlines()[0] if r.stdout else '?'}")
+    npath = shutil.which('node')
+    lines.append(f"• node path: {npath or 'NOT FOUND'}")
+    from pathlib import Path
+    from config import USER_CONFIGS_DIR
+    lines.append(f"• gdrive connected: {Path(USER_CONFIGS_DIR, f'rclone_{cid}.conf').exists()}")
+    import db
+    row = db.get_user(cid)
+    lines.append(f"• stored dest: {row['upload_dest'] if row else None}")
+    bot.reply_to(message, "\n".join(lines))
