@@ -29,7 +29,7 @@ def smart_dest(file_path: str, status_msg, dest: str = None, folder_name: str = 
         import db
         try:
             d = db.get_upload_dest(cid)
-            dest = d if d in ('tg', 's3', 'github', 'gd') else 'tg'
+            dest = d if d in ('s3', 'github', 'gd') else 'gd'
         except Exception:
             dest = 'tg'
 

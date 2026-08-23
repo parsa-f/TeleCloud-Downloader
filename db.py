@@ -387,10 +387,12 @@ def clear_upload_dest(user_id: int) -> None:
 
 
 def get_upload_dest(user_id: int) -> str:
+    """Stored destination, or 'ask' when unset/NULL/legacy."""
     row = get_user(user_id)
     if not row:
-        return "tg"
-    return row["upload_dest"] or "tg"
+        return "ask"
+    d = row["upload_dest"]
+    return d if d in ("gd", "s3", "github") else "ask"
 
 
 def get_github_repo(user_id: int):

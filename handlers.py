@@ -478,8 +478,8 @@ def handle_incoming_files(message):
         # straight to it — no menu. Otherwise show the per-file picker.
         from dest_helpers import should_ask_dest
         import db as _db
-        if not should_ask_dest(cid):
-            default_dest = _db.get_upload_dest(cid)
+        default_dest = _db.get_upload_dest(cid)
+        if default_dest in ('gd', 's3', 'github'):
             try:
                 bot.edit_message_text(f"⏳ آپلود به: {default_dest}...", cid, status_msg.message_id)
             except Exception:
