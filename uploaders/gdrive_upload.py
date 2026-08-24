@@ -12,8 +12,6 @@ from utils import build_rich_progress_card, cleanup_path, fmt_size
 # ──────────────────────────────────────────────────────────────
 # Per-user rclone config resolution
 # ──────────────────────────────────────────────────────────────
-DEFAULT_RCLONE_CONF = "/root/.config/rclone/rclone.conf"
-
 
 def _user_config_path(user_id: int) -> Path:
     """Return the per-user rclone config path (may not exist)."""
@@ -44,11 +42,8 @@ def get_rclone_config_args(user_id) -> list[str]:
             return ["--config", str(user_conf)]
 
     # ── Steps 2 & 3: no personal config found ────────────────────────────
-    if str(user_id) == str(ADMIN_ID):
-        # Admin is allowed to fall back to the system-wide default config
-        return ["--config", DEFAULT_RCLONE_CONF]
-
-    # Any other user: hard block — do NOT fall back to the admin's Drive
+    # Admin is now treated exactly like a regular user: they MUST connect
+    # their own Drive (rclone_<uid>.conf) before uploading. No system default.
     raise RuntimeError(
         "❌ شما هنوز گوگل درایو خود را متصل نکردهاید. "
         "لطفاً از بخش تنظیمات (☁️ اتصال گوگل درایو) اقدام کنید."
@@ -198,6 +193,24 @@ def upload_to_gdrive_cancellable(
             reply_markup=_cancel_markup(cid))
     except Exception:
         pass
+
+    # ── Validate token isn't empty before spawning rclone ───────────────────
+    user_conf = _user_config_path(uid) if uid is not None else None
+    if user_conf and user_conf.exists():
+        try:
+            import configparser
+            cp = configparser.ConfigParser()
+            cp.read(str(user_conf))
+            tok = cp.get('gdrive', 'token', fallback='')
+            if not tok or tok.strip() == '{}':
+                raise RuntimeError(
+                    "❌ توکن گوگل درایو خالی است. لطفاً دوباره مرحله اتصال "
+                    "(☁️ اتصال گوگل درایو) را با client_id شخصی انجام دهید."
+                )
+        except RuntimeError:
+            raise
+        except Exception:
+            pass
 
     cmd = [
         "rclone", "copy", path, drive_dest,

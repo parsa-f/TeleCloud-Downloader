@@ -34,6 +34,7 @@ def _configure_bot_commands():
         types.BotCommand('setquota', 'Set quota: /setquota <id> <files> <GB>'),
         types.BotCommand('users', 'Manage users panel: /users'),
         types.BotCommand('togglereg', 'Toggle self-registration'),
+        types.BotCommand('setgithub', 'Set GitHub token: /setgithub <TOKEN> <owner/repo>'),
         types.BotCommand('broadcast', 'Broadcast: /broadcast <message>'),
     ]
 

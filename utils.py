@@ -124,10 +124,15 @@ def build_rich_progress_card(status_icon: str, title: str, percent: float,
 def friendly_error(err: str, get_free_space_fn=None, cid=None) -> str:
     from locales import t as _t
     e = str(err).lower()
-    if any(k in e for k in ['login', 'sign in', '403', 'age', 'cookie', 'private']):
-        return _t(cid, 'err_login') if cid else (
-            "🔒 محتوا نیاز به لاگین دارد.\n"
-            "➡️ از منوی 🍪 مدیریت کوکی، کوکی سایت را اضافه کنید.")
+    # Only claim "login required" when the error actually points to auth,
+    # not for any 403/private mention (YouTube uses those for rate-limits
+    # and unavailable videos even with valid cookies).
+    if ('sign in' in e or 'log in to view' in e or 'login required' in e
+            or 'confirm you' in e or ('age' in e and 'restricted' in e)):
+        return _t(cid, 'err_login_fresh') if cid else (
+            "🔒 یوتیوب میگه لاگین لازمه.\n"
+            "➡️ کوکی تازه بگیر: از مرورگر لاگین کن → cookies.txt خروجی بگیر → از منوی 🍪 بفرست.\n"
+            "💡 کوکی قدیمی/منقضی هم همین خطا رو میده — اگه قبلاً کوکی دادی، پاکش کن و جدید بفرست.")
     if '404' in e or 'not found' in e:
         return _t(cid, 'err_404') if cid else (
             "🔗 لینک پیدا نشد (404).\n"
@@ -145,6 +150,12 @@ def friendly_error(err: str, get_free_space_fn=None, cid=None) -> str:
         free = get_free_space_fn() if get_free_space_fn else get_free_space()
         return (_t(cid, 'err_disk', free=free) if cid else
                 f"💾 فضای دیسک کافی نیست! آزاد: {free}\n➡️ لطفاً با ادمین تماس بگیرید.")
+    if 'unable to download video data' in e and '403' in e:
+        # YouTube throttling/PO-token issue — cookie alone doesn't fix it.
+        return (_t(cid, 'err_yt_403') if cid else
+                "🚫 یوتیوب دانلود این ویدیو رو مسدود کرده (403).\n"
+                "➡️ چند دقیقه بعد دوباره امتحان کن یا کیفیت دیگه‌ای انتخاب کن.\n"
+                "💡 اگه تکرار شد، کوکی تازهٔ یوتیوب اضافه کن.")
     if 'unsupported' in e or 'no extractor' in e:
         return _t(cid, 'err_unsupported') if cid else (
             "🚫 این سایت پشتیبانی نمیشود.\n"

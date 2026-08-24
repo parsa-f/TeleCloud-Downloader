@@ -48,11 +48,15 @@ SCOPES = [
     "https://www.googleapis.com/auth/drive",
 ]
 
-# ── rclone OAuth2 client credentials (the public "rclone" app) ──
-# These are the official rclone client credentials that Google has approved
-# for the installed-app flow; they are embedded in every rclone binary.
-RCLONE_CLIENT_ID     = "202264815644.apps.googleusercontent.com"
-RCLONE_CLIENT_SECRET = "X4Z3ca8xfWDb1Voo-F9a7ZxJ"
+# ── rclone OAuth2 client credentials ──
+# Google is retiring the shared rclone client_id in 2026, so each user MUST
+# provide their OWN credentials. Create them at:
+#   https://console.cloud.google.com/apis/credentials
+#   1. "Create OAuth client ID" → Application type: "Desktop app"
+#   2. Copy the Client ID and Client Secret below.
+# If left blank, the script will fall back to the (deprecated) shared rclone id.
+RCLONE_CLIENT_ID     = ""   # ← paste your own Client ID here
+RCLONE_CLIENT_SECRET = ""   # ← paste your own Client Secret here
 
 # Token endpoint used by rclone
 RCLONE_TOKEN_URL = "https://oauth2.googleapis.com/token"
@@ -78,8 +82,8 @@ def _get_credentials_via_flow() -> Credentials:
     """
     client_config = {
         "installed": {
-            "client_id":                   RCLONE_CLIENT_ID,
-            "client_secret":               RCLONE_CLIENT_SECRET,
+            "client_id":     RCLONE_CLIENT_ID or "202264815644.apps.googleusercontent.com",
+            "client_secret": RCLONE_CLIENT_SECRET or "X4Z3ca8xfWDb1Voo-F9a7ZxJ",
             "auth_uri":                    "https://accounts.google.com/o/oauth2/auth",
             "token_uri":                   RCLONE_TOKEN_URL,
             "redirect_uris":               ["http://localhost"],

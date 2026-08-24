@@ -22,7 +22,7 @@ def _cancel_markup(cid=None):
 
 def _is_ytdlp_url(url: str) -> bool:
     try:
-        with yt_dlp.YoutubeDL({'quiet': True, 'js_runtimes': {'node': {}}}) as ydl:
+        with yt_dlp.YoutubeDL({'quiet': True, 'js_runtimes': {'deno': {}, 'node': {}}}) as ydl:
             for ie_cls in ydl._ies.values():
                 try:
                     if ie_cls.suitable(url) and ie_cls.IE_NAME not in ('generic', 'Generic'):
@@ -38,7 +38,7 @@ def ytdlp_universal(task):
     from config import tg_upload_mode
     chat_id = task['chat_id']
     cid     = chat_id
-    dest    = task.get('dest') or ('tg' if chat_id in tg_upload_mode else 'gd')
+    dest    = task.get('dest') or 'tg'
     url     = task['url']
 
     if not check_disk_space():
@@ -106,7 +106,7 @@ def ytdlp_universal(task):
         'progress_hooks':      [hook],
         'quiet':               True,
         'no_warnings':         True,
-        'js_runtimes':         {'node': {}},
+        'js_runtimes':         {'deno': {}, 'node': {}},
         'windowsfilenames':    True,
         # Bug 4a: False for SoundCloud /sets/ so the whole album downloads,
         # True for single-item URLs (the safe default for all other platforms).
@@ -146,9 +146,8 @@ def ytdlp_universal(task):
         except Exception: pass
 
         # ── Byte quota accounting ──────────────────────────────
-        if cid != ADMIN_ID:
-            real_size = os.path.getsize(fp) if os.path.isfile(fp) else 0
-            db.record_download_bytes(cid, real_size)
+        real_size = os.path.getsize(fp) if os.path.isfile(fp) else 0
+        db.record_download_bytes(cid, real_size)
 
         # ── ID3 metadata fix for audio downloads ──────────────
         if audio_only and fp and fp.endswith('.mp3'):
@@ -349,9 +348,8 @@ def process_soundcloud_playlist(task):
 
             if fp and not task['_stop'].is_set():
                 # Byte quota accounting
-                if cid != ADMIN_ID:
-                    real_size = os.path.getsize(fp) if os.path.isfile(fp) else 0
-                    db.record_download_bytes(cid, real_size)
+                real_size = os.path.getsize(fp) if os.path.isfile(fp) else 0
+                db.record_download_bytes(cid, real_size)
 
                 # Parse artist/title from the raw title string.
                 # SoundCloud doesn't provide a separate 'artist' field —

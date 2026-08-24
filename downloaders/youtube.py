@@ -31,7 +31,7 @@ def get_format_sizes(url: str, cid=None) -> dict:
     opts  = {
         'quiet': True,
         'skip_download': True,
-        'js_runtimes': {'node': {}},
+        'js_runtimes': {'deno': {}, 'node': {}},
     }
     if cf: opts['cookiefile'] = cf
     try:
@@ -142,7 +142,7 @@ def _build_ydl_opts(task: dict, folder: str, hook) -> dict:
         'writethumbnail':      audio_only,
         'quiet':               True,
         'no_warnings':         True,
-        'js_runtimes':         {'node': {}},
+        'js_runtimes':         {'deno': {}, 'node': {}},
         'windowsfilenames':    True,
         'concurrent_fragment_downloads': 4,
         'throttledratelimit':           100000,
@@ -186,7 +186,7 @@ def process_youtube_download(task):
     from locales import t
     chat_id = task['chat_id']
     cid     = chat_id
-    dest    = task.get('dest') or ('tg' if chat_id in tg_upload_mode else 'gd')
+    dest    = task.get('dest') or 'tg'
 
     if not check_disk_space():
         bot.send_message(chat_id, t(cid, 'disk_no_space', free=get_free_space()))
@@ -257,9 +257,8 @@ def process_youtube_download(task):
         except Exception: pass
 
         # ── Byte quota accounting ──────────────────────────────
-        if cid != ADMIN_ID:
-            real_size = os.path.getsize(file_path) if os.path.isfile(file_path) else 0
-            db.record_download_bytes(cid, real_size)
+        real_size = os.path.getsize(file_path) if os.path.isfile(file_path) else 0
+        db.record_download_bytes(cid, real_size)
 
         final_title = task.get('actual_title', title_kw)
         final_artist = None
@@ -344,7 +343,7 @@ def fetch_playlist_entries(url: str, cf=None) -> tuple:
         'quiet': True,
         'skip_download': True,
         'extract_flat': True,
-        'js_runtimes': {'node': {}},
+        'js_runtimes': {'deno': {}, 'node': {}},
     }
     if cf: opts['cookiefile'] = cf
     with yt_dlp.YoutubeDL(opts) as ydl:
@@ -357,7 +356,7 @@ def process_playlist_download(task):
     from locales import t
     chat_id    = task['chat_id']
     cid        = chat_id
-    dest       = task.get('dest') or ('tg' if chat_id in tg_upload_mode else 'gd')
+    dest       = task.get('dest') or 'tg'
     url        = task['url']
     audio_only = task.get('audio_only', False)
     fmt        = task.get('format', 'bestvideo+bestaudio/best')
@@ -441,7 +440,7 @@ def process_playlist_download(task):
             'merge_output_format': merge_fmt,
             'quiet':               True,
             'no_warnings':         True,
-            'js_runtimes':         {'node': {}},
+            'js_runtimes':         {'deno': {}, 'node': {}},
             'windowsfilenames':    True,
             'concurrent_fragment_downloads': 4,
             'throttledratelimit':           100000,
@@ -462,9 +461,8 @@ def process_playlist_download(task):
 
             if fp and not task['_stop'].is_set():
                 # ── Byte quota accounting ──────────────────
-                if cid != ADMIN_ID:
-                    real_size = os.path.getsize(fp) if os.path.isfile(fp) else 0
-                    db.record_download_bytes(cid, real_size)
+                real_size = os.path.getsize(fp) if os.path.isfile(fp) else 0
+                db.record_download_bytes(cid, real_size)
                 sub = bot.send_message(chat_id, t(cid, 'uploading_item', idx=idx, total=total, name=os.path.basename(fp)))
                 item_info = task_info_base.copy()
                 item_info['title'] = os.path.basename(fp)

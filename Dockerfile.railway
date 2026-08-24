@@ -1,0 +1,39 @@
+# ── Stage 1: extract telegram-bot-api binary (Alpine/musl) ──
+FROM aiogram/telegram-bot-api:10.2-linuxamd64 AS api
+
+# ── Stage 2: bot runtime (Alpine/musl — matches stage 1 libc) ──
+FROM python:3.11-alpine
+
+ENV PYTHONUNBUFFERED=1
+
+# system deps + ffmpeg + aria2 + rclone + node (for yt-dlp js runtime)
+# libstdc++ is required by the telegram-bot-api binary
+RUN apk add --no-cache \
+    ffmpeg aria2 curl unzip nodejs libstdc++ ca-certificates git \
+    postgresql-dev postgresql-libs gcc musl-dev libpq
+
+# deno — yt-dlp 2026.8+ EJS requires it; alpine's main repo has an old deno,
+# so pull the current one from alpine edge (musl-compatible).
+RUN apk add --no-cache --repository=https://dl-cdn.alpinelinux.org/alpine/edge/community deno
+
+# rclone
+RUN curl -fsSL https://downloads.rclone.org/rclone-current-linux-amd64.zip -o /tmp/rclone.zip \
+    && cd /tmp && unzip -o rclone.zip >/dev/null \
+    && cp rclone-*-linux-amd64/rclone /usr/bin/rclone \
+    && chmod +x /usr/bin/rclone && rm -rf /tmp/rclone*
+
+# copy telegram-bot-api binary from stage 1 (musl → musl, compatible)
+COPY --from=api /usr/local/bin/telegram-bot-api /usr/local/bin/telegram-bot-api
+
+WORKDIR /app
+
+COPY requirements.txt /tmp/requirements.txt
+RUN pip install --no-cache-dir -r /tmp/requirements.txt
+
+COPY . /app
+
+# yt-dlp node js runtime
+RUN mkdir -p /root/.config/yt-dlp && echo '--js-runtimes deno,node' > /root/.config/yt-dlp/config
+
+EXPOSE 8081
+CMD ["sh", "/app/start_railway.sh"]

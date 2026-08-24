@@ -76,17 +76,34 @@ _SUBTITLE_LOCALE = {
 # =============================================================
 
 def get_dest(cid) -> str:
-    """Return the user's default upload destination."""
-    if cid in config.tg_upload_mode:
-        return 'tg'
-    if cid in config.gd_upload_mode:
-        return 'gd'
-    return None
+    """User's default destination. gd without connected Drive falls back to ask."""
+    import db
+    from pathlib import Path
+    from config import USER_CONFIGS_DIR
+    try:
+        d = db.get_upload_dest(cid)
+        if d == 'gd' and cid and not Path(USER_CONFIGS_DIR, f"rclone_{cid}.conf").exists():
+            return 'ask'
+        return d if d in ('gd', 's3', 'github') else 'ask'
+    except Exception:
+        return 'ask'
+
+
+def has_drive(cid) -> bool:
+    import os
+    from pathlib import Path
+    from config import USER_CONFIGS_DIR
+    return bool(cid) and Path(USER_CONFIGS_DIR, f"rclone_{cid}.conf").exists()
 
 
 def should_ask_dest(cid) -> bool:
-    """Return True if the user has not yet chosen a destination."""
-    return cid not in config.tg_upload_mode and cid not in config.gd_upload_mode
+    """Return True if the user has never explicitly chosen a destination."""
+    import db
+    try:
+        row = db.get_user(cid)
+        return not (row and row["upload_dest"])  # NULL/absent = ask per file
+    except Exception:
+        return True
 
 
 # =============================================================

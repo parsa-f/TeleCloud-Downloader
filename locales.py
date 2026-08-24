@@ -733,6 +733,10 @@ STRINGS = {
         'fa': "مقصد را انتخاب کنید:",
         'en': "Select destination:",
     },
+    'select_dest_cancelled': {
+        'fa': "انتخاب مقصد لغو شد.",
+        'en': "Destination selection cancelled.",
+    },
 
     # ── Playlist ───────────────────────────────────────────────
     'playlist_quality': {
@@ -986,6 +990,18 @@ STRINGS = {
     'err_disk': {
         'fa': "💾 فضای دیسک کافی نیست! آزاد: {free}\n➡️ لطفاً با ادمین تماس بگیرید.",
         'en': "💾 Not enough disk space! Free: {free}\n➡️ Please contact the admin.",
+    },
+    'upload_failed_toast': {
+        'fa': "❌ آپلود ناموفق بود. دوباره امتحان کن.",
+        'en': "❌ Upload failed. Please try again.",
+    },
+    'err_yt_403': {
+        'fa': "🚫 یوتیوب دانلود این ویدیو رو مسدود کرده (403).\n➡️ چند دقیقه بعد دوباره امتحان کن یا کیفیت دیگه‌ای انتخاب کن.\n💡 اگه تکرار شد، کوکی تازهٔ یوتیوب اضافه کن.",
+        'en': "🚫 YouTube blocked this download (403).\n➡️ Try again in a few minutes or pick another quality.\n💡 If it repeats, add a fresh YouTube cookie.",
+    },
+    'err_login_fresh': {
+        'fa': "🔒 یوتیوب میگه لاگین لازمه.\n➡️ کوکی تازه بگیر: از مرورگر لاگین کن، افزونهٔ «Get cookies.txt LOCALLY» رو نصب کن، خروجی بگیر و از منوی 🍪 بفرست.\n💡 کوکی قدیمی/منقضی هم همین خطا میده — پاکش کن و جدید بفرست.",
+        'en': "🔒 YouTube says login is required.\n➡️ Get a fresh cookie: log in via browser, export cookies.txt with the \"Get cookies.txt LOCALLY\" extension, send it via the 🍪 menu.\n💡 An old/expired cookie gives this too — delete it and send a new one.",
     },
     'err_unsupported': {
         'fa': "🚫 این سایت پشتیبانی نمیشود.\n➡️ از گزینه 🌐 لینک مستقیم استفاده کنید.",
@@ -1400,6 +1416,11 @@ STRINGS = {
             " نیازی به کامپیوتر ندارید — همه کارها از گوشی قابل انجام است.\n\n"
             "━━━━━━━━━━━━━━━━━━\n"
             "📋 <b>مراحل اتصال:</b>\n\n"
+            "0️⃣ (ضروری) یک بار در گوگل کلود یک OAuth Client ID شخصی بسازید:\n"
+            "👉 https://console.cloud.google.com/apis/credentials\n"
+            "• «Create OAuth client ID» → نوع: «Desktop app»\n"
+            "• Client ID و Client Secret را کپی کنید و در اسکریپت Colab (بالای فایل) جای‌گذاری کنید.\n"
+            "⚠️ بدون این کار، گوگل اتصال را بلاک می‌کند (client_id اشتراکی rclone از ۲۰۲۶ غیرفعال شد).\n\n"
             "1️⃣ لینک زیر را در مرورگر خود باز کنید:\n"
             "👉 <code>{colab_url}</code>\n\n"
             "2️⃣ روی ▶️ <b>Run</b> کلیک کنید و با حساب گوگل خود وارد شوید.\n\n"
@@ -1416,6 +1437,11 @@ STRINGS = {
             " No computer needed — everything works from your phone.\n\n"
             "━━━━━━━━━━━━━━━━━━\n"
             "📋 <b>Setup Steps:</b>\n\n"
+            "0️⃣ (Required) Create your own OAuth Client ID in Google Cloud once:\n"
+            "👉 https://console.cloud.google.com/apis/credentials\n"
+            "• 'Create OAuth client ID' → Application type: 'Desktop app'\n"
+            "• Copy the Client ID and Client Secret into the Colab script (top of file).\n"
+            "⚠️ Without this, Google will block the connection (shared rclone client_id retired in 2026).\n\n"
             "1️⃣ Open the link below in your browser:\n"
             "👉 <code>{colab_url}</code>\n\n"
             "2️⃣ Click ▶️ <b>Run</b> and sign in with your Google account.\n\n"

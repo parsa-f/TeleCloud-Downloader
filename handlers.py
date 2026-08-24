@@ -167,12 +167,21 @@ def disable_user_and_stop_tasks(user_id: int) -> int:
 # =============================================================
 @bot.message_handler(commands=['start'])
 def start(message):
+    import db
     cid = message.chat.id
     db.touch_user_identity(
         cid,
         message.from_user.username,
         _display_name_from_user(message.from_user),
     )
+
+    # Auto-promote first user as admin if ADMIN_ID was never configured
+    if config.ADMIN_ID == 0:
+        try:
+            db.approve_user(cid)
+            config.ADMIN_ID = cid
+        except Exception:
+            pass
 
     # Language picker first
     if not has_lang(cid):
@@ -330,6 +339,27 @@ def cmd_togglereg(message):
 
 
 # =============================================================
+# Per-user GitHub upload config: /setgithub <TOKEN> <owner/repo>
+# =============================================================
+@bot.message_handler(commands=['setgithub'])
+def cmd_setgithub(message):
+    cid = message.chat.id
+    parts = message.text.split()
+    if len(parts) < 3:
+        bot.reply_to(message,
+                     "استفاده:\n/setgithub <TOKEN> <owner/repo>\nمثال:\n/setgithub ghp_xxx amirh00sain/myuploads")
+        return
+    token = parts[1].strip()
+    repo = parts[2].strip()
+    if '/' not in repo:
+        bot.reply_to(message, "ریپو باید به فرم owner/repo باشه")
+        return
+    db.set_github_token(cid, token)
+    db.set_github_repo(cid, repo)
+    bot.reply_to(message, f"توکن GitHub و ریپو ست شد:\n repo: {repo}\nحالا مقصد رو روی GitHub بذار (تنظیمات → Upload)")
+
+
+# =============================================================
 # Admin command: /broadcast <message>
 # =============================================================
 @bot.message_handler(commands=['broadcast'])
@@ -359,6 +389,7 @@ def cmd_broadcast(message):
 # =============================================================
 @bot.message_handler(content_types=['document', 'video', 'audio', 'photo', 'voice', 'video_note'])
 def handle_incoming_files(message):
+    import db
     cid   = message.chat.id
     state = user_state.get(cid)
     db.touch_user_identity(
@@ -433,19 +464,39 @@ def handle_incoming_files(message):
         info = bot.get_file(fid)
         file_path = _resolve_local_bot_api_path(info.file_path)
         fp = os.path.join(DOWNLOAD_DIR, fname)
-        if file_path.startswith('/'):
+        if file_path.startswith('/') and os.path.exists(file_path):
             # Local Bot API server: read the file directly from the shared volume.
             with open(file_path, 'rb') as _src, open(fp, 'wb') as _dst:
                 _dst.write(_src.read())
         else:
-            # Fallback: download via cloud Telegram API
-            data = bot.download_file(file_path)
+            # Fallback: download via cloud Telegram API (works without Local API)
+            data = bot.download_file(info.file_path)
             with open(fp, 'wb') as f:
                 f.write(data)
-        upload_file_to_gdrive_folder(
-            fp, status_msg, "FilesFromTel",
-            user_id=message.from_user.id,
-        )
+
+        # If the user already set a default destination (not 'manual'), upload
+        # straight to it — no menu. Otherwise show the per-file picker.
+        from dest_helpers import should_ask_dest
+        import db as _db
+        default_dest = _db.get_upload_dest(cid)
+        if default_dest in ('gd', 's3', 'github'):
+            try:
+                bot.edit_message_text(f"⏳ آپلود به: {default_dest}...", cid, status_msg.message_id)
+            except Exception:
+                pass
+            from uploaders.smart_dest import smart_dest
+            smart_dest(fp, status_msg, dest=default_dest, folder_name="FilesFromTel",
+                       task_info={'chat_id': cid, 'user_id': cid})
+            return
+
+        # Ask which destination to use for THIS file (per-file choice).
+        # Telegram option removed: the file is already in Telegram.
+        from menu import destination_pick_markup
+        config.pending_uploads[cid] = {'fp': fp, 'status_msg_id': status_msg.message_id}
+        bot.edit_message_text(
+            "فایل دریافت شد. مقصد آپلود رو انتخاب کن:",
+            cid, status_msg.message_id,
+            reply_markup=destination_pick_markup(cid))
 
     except Exception as e:
         text = f"❌ {friendly_error(str(e), cid=cid)}"
@@ -885,7 +936,7 @@ def _handle_youtube_link(message, cid, text):
     key = (cid, msg.message_id)
     with cache_lock:
         url_cache[key] = text
-    opts = {'extract_flat': True, 'quiet': True, 'js_runtimes': {'node': {}}}
+    opts = {'extract_flat': True, 'quiet': True, 'js_runtimes': {'deno': {}, 'node': {}}}
     cf   = active_cookies_file(text, cid)
     if cf:
         opts['cookiefile'] = cf
@@ -923,7 +974,7 @@ def _handle_youtube_link(message, cid, text):
                 if should_ask_dest(cid):
                     dest_mk = types.InlineKeyboardMarkup()
                     dest_mk.row(
-                        types.InlineKeyboardButton(t(cid, 'btn_tg'), callback_data=f"ytd|audio|tg|{msg.message_id}"),
+                        types.InlineKeyboardButton('🗄 S3', callback_data=f"ytd|audio|s3|{msg.message_id}"),
                         types.InlineKeyboardButton(t(cid, 'btn_gd'), callback_data=f"ytd|audio|gd|{msg.message_id}"),
                     )
                     bot.edit_message_text(
@@ -953,11 +1004,8 @@ def _handle_youtube_link(message, cid, text):
                 dest = get_dest(cid)
                 yt_label = YT_LABELS.get(quality, quality)
                 if should_ask_dest(cid):
-                    dest_mk = types.InlineKeyboardMarkup()
-                    dest_mk.row(
-                        types.InlineKeyboardButton(t(cid, 'btn_tg'), callback_data=f"ytd|{quality}|tg|{msg.message_id}"),
-                        types.InlineKeyboardButton(t(cid, 'btn_gd'), callback_data=f"ytd|{quality}|gd|{msg.message_id}"),
-                    )
+                    from menu import dest_pick_markup
+                    dest_mk = dest_pick_markup(cid, prefix=f"ytd|{quality}|{msg.message_id}", back=f"ytd|{quality}|{msg.message_id}|back")
                     bot.edit_message_text(
                         t(cid, 'yt_quality_dest_msg', title=title, m=m, s=s_str, quality=yt_label),
                         cid, msg.message_id, reply_markup=dest_mk)
@@ -1020,11 +1068,8 @@ def _handle_torrent_link(message, cid, text):
         dest_icon = '📱' if cid in config.tg_upload_mode else '☁️'
         bot.reply_to(message, t(cid, 'torrent_queued', dest_icon=dest_icon))
     else:
-        markup = types.InlineKeyboardMarkup()
-        markup.row(
-            types.InlineKeyboardButton(t(cid, 'btn_tg'), callback_data=f"tr|tg|{message.message_id}"),
-            types.InlineKeyboardButton(t(cid, 'btn_gd'), callback_data=f"tr|gd|{message.message_id}"),
-        )
+        from menu import dest_pick_markup
+        markup = dest_pick_markup(cid, prefix=f"tr|{message.message_id}", back=f"tr|{message.message_id}|back")
         bot.reply_to(message, t(cid, 'select_dest'), reply_markup=markup)
 
 
@@ -1038,11 +1083,8 @@ def _handle_direct_link(message, cid, text):
         dest_icon = '📱' if cid in config.tg_upload_mode else '☁️'
         bot.reply_to(message, t(cid, 'direct_queued', dest_icon=dest_icon))
     else:
-        markup = types.InlineKeyboardMarkup()
-        markup.row(
-            types.InlineKeyboardButton(t(cid, 'btn_tg'), callback_data=f"dl|tg|{message.message_id}"),
-            types.InlineKeyboardButton(t(cid, 'btn_gd'), callback_data=f"dl|gd|{message.message_id}"),
-        )
+        from menu import dest_pick_markup
+        markup = dest_pick_markup(cid, prefix=f"dl|{message.message_id}", back=f"dl|{message.message_id}|back")
         bot.reply_to(message, t(cid, 'select_dest'), reply_markup=markup)
 
 
@@ -1178,8 +1220,8 @@ def _handle_scpl_custom_count(cid, text, state):
     else:
         dest_mk = types.InlineKeyboardMarkup()
         dest_mk.row(
-            types.InlineKeyboardButton(t(cid, 'btn_tg'),
-                callback_data=f"scpl_dest|{mid}|{count}|tg"),
+            types.InlineKeyboardButton('🗄 S3',
+                callback_data=f"scpl_dest|{mid}|{count}|s3"),
             types.InlineKeyboardButton(t(cid, 'btn_gd'),
                 callback_data=f"scpl_dest|{mid}|{count}|gd"),
         )
@@ -1217,8 +1259,8 @@ def _handle_social_link(message, cid, text):
         if should_ask_dest(cid):
             dest_mk = types.InlineKeyboardMarkup()
             dest_mk.row(
-                types.InlineKeyboardButton(t(cid, 'btn_tg'),
-                    callback_data=f"scd|a|bestaudio/best|tg|{msg.message_id}"),
+                types.InlineKeyboardButton('🗄 S3',
+                    callback_data=f"scd|a|bestaudio/best|s3|{msg.message_id}"),
                 types.InlineKeyboardButton(t(cid, 'btn_gd'),
                     callback_data=f"scd|a|bestaudio/best|gd|{msg.message_id}"),
             )
@@ -1255,8 +1297,8 @@ def _handle_social_link(message, cid, text):
         if should_ask_dest(cid):
             dest_mk = types.InlineKeyboardMarkup()
             dest_mk.row(
-                types.InlineKeyboardButton(t(cid, 'btn_tg'),
-                    callback_data=f"scd|v|{fmt}|tg|{msg.message_id}"),
+                types.InlineKeyboardButton('🗄 S3',
+                    callback_data=f"scd|v|{fmt}|s3|{msg.message_id}"),
                 types.InlineKeyboardButton(t(cid, 'btn_gd'),
                     callback_data=f"scd|v|{fmt}|gd|{msg.message_id}"),
             )
@@ -1290,7 +1332,7 @@ def _handle_social_link(message, cid, text):
         cf   = active_cookies_file(text, cid)
         # Bug 4a: dynamically decide noplaylist based on the URL structure.
         # SoundCloud /sets/ URLs are playlists and must not be truncated to 1 track.
-        opts = {'quiet': True, 'skip_download': True, 'noplaylist': _url_is_playlist(text), 'js_runtimes': {'node': {}}}
+        opts = {'quiet': True, 'skip_download': True, 'noplaylist': _url_is_playlist(text), 'js_runtimes': {'deno': {}, 'node': {}}}
         if cf:
             opts['cookiefile'] = cf
         try:
@@ -1396,8 +1438,8 @@ def _handle_playlist_count(cid, text, state):
         media = t(cid, 'playlist_media_audio') if audio else t(cid, 'playlist_media_video', quality=quality)
         dest_mk = types.InlineKeyboardMarkup()
         dest_mk.row(
-            types.InlineKeyboardButton(t(cid, 'btn_tg'),
-                callback_data=f"pld|{count}|tg|{mid}|{'1' if audio else '0'}|{quality}"),
+            types.InlineKeyboardButton('🗄 S3',
+                callback_data=f"pld|{count}|s3|{mid}|{'1' if audio else '0'}|{quality}"),
             types.InlineKeyboardButton(t(cid, 'btn_gd'),
                 callback_data=f"pld|{count}|gd|{mid}|{'1' if audio else '0'}|{quality}"),
         )
@@ -1466,3 +1508,29 @@ def _send_profile_stats(cid: int) -> None:
           monthly_files=monthly_files_used, max_monthly_files=max_monthly_files,
           monthly_used_gb=monthly_used_gb, monthly_max_gb=monthly_max_gb),
     )
+
+
+@bot.message_handler(commands=['diag'])
+def cmd_diag(message):
+    cid = message.chat.id
+    import yt_dlp, shutil, sys
+    lines = ["🔧 Diagnostic:"]
+    try:
+        lines.append(f"• yt-dlp: {yt_dlp.version.__version__}")
+    except Exception:
+        lines.append("• yt-dlp: ?")
+    dpath = shutil.which('deno')
+    lines.append(f"• deno path: {dpath or 'NOT FOUND'}")
+    if dpath:
+        import subprocess
+        r = subprocess.run([dpath, '--version'], capture_output=True, text=True, timeout=10)
+        lines.append(f"• deno ver: {r.stdout.splitlines()[0] if r.stdout else '?'}")
+    npath = shutil.which('node')
+    lines.append(f"• node path: {npath or 'NOT FOUND'}")
+    from pathlib import Path
+    from config import USER_CONFIGS_DIR
+    lines.append(f"• gdrive connected: {Path(USER_CONFIGS_DIR, f'rclone_{cid}.conf').exists()}")
+    import db
+    row = db.get_user(cid)
+    lines.append(f"• stored dest: {row['upload_dest'] if row else None}")
+    bot.reply_to(message, "\n".join(lines))

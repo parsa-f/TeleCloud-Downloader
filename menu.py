@@ -72,15 +72,19 @@ def settings_inline_markup(cid=None):
 
     # ── Section B: Toggle / Cycle settings (2-column grid) ────
     audio_mode = is_audio_mode(cid) if cid else False
-    tg_mode    = cid in config.tg_upload_mode if cid else False
-    gd_mode    = cid in config.gd_upload_mode if cid else False
 
     media_label   = (get_audio_mode_label(cid)  if cid else "🎬 Media: Video")
     if cid:
-        if tg_mode:
-            upload_label = t(cid, 'btn_upload_tg')
-        elif gd_mode:
+        import db
+        d = db.get_upload_dest(cid)
+        if d == 'tg':
+            upload_label = t(cid, 'btn_upload_tg')  # legacy value; treated as "ask"
+        elif d == 'gd':
             upload_label = t(cid, 'btn_upload_gd')
+        elif d == 's3':
+            upload_label = '☁️ آپلود: Railway S3'
+        elif d == 'github':
+            upload_label = '🐙 آپلود: GitHub'
         else:
             upload_label = t(cid, 'btn_upload_ask')
     else:
@@ -109,7 +113,7 @@ def settings_inline_markup(cid=None):
     # Row 2: Quality · Upload destination
     mk.row(
         types.InlineKeyboardButton(quality_label, callback_data="set|qual"),
-        types.InlineKeyboardButton(upload_label,  callback_data="set|upload"),
+        types.InlineKeyboardButton(upload_label,  callback_data="set|destmenu"),
     )
     # Row 3: Subtitle · Chapters
     mk.row(
@@ -121,6 +125,49 @@ def settings_inline_markup(cid=None):
     # Row 5: Google Drive connection (full width, status-aware)
     mk.add(types.InlineKeyboardButton(_gdrive_button_label(cid), callback_data="set|gdrive"))
 
+    return mk
+
+
+def dest_pick_markup(cid=None, prefix: str = "dest", back: str = "set|back"):
+    """
+    Per-download destination picker (links/youtube/torrent).
+    Telegram removed — for chat files the file is already in Telegram;
+    downloaded files go to a cloud destination or get asked per file.
+    All callbacks become:  <prefix>|<key>   where key ∈ gd|s3|github
+    """
+    import db
+    cur = db.get_upload_dest(cid) if cid else 'ask'
+    mk = types.InlineKeyboardMarkup(row_width=2)
+
+    def btn(key, label):
+        mark = "✅ " if cur == key else ""
+        return types.InlineKeyboardButton(mark + label, callback_data=f"{prefix}|{key}")
+
+    # Warn (don't block) if this user hasn't connected Google Drive.
+    from pathlib import Path as _P
+    has_gd = cid and _P(USER_CONFIGS_DIR, f"rclone_{cid}.conf").exists()
+    mk.row(btn('tg', "📤 تلگرام"), btn('gd', "☁️ Google Drive" + ("" if has_gd else " ⚠️")))
+    mk.row(btn('s3', "🗄 Railway S3"), btn('github', "🐙 GitHub"))
+    mk.add(types.InlineKeyboardButton("🔙 بازگشت", callback_data=back))
+    return mk
+
+
+def destination_pick_markup(cid=None):
+    """Settings menu: default upload destination — Ask (per-file) + 3 cloud
+    destinations. Telegram excluded: files sent in chat are already there."""
+    import db
+    cur = db.get_upload_dest(cid) if cid else None
+    mk = types.InlineKeyboardMarkup(row_width=2)
+
+    def btn(key, label):
+        mark = "✅ " if cur == key else ""
+        return types.InlineKeyboardButton(mark + label, callback_data=f"dest|{key}")
+
+    ask_mark = "✅ " if cur not in ('gd', 's3', 'github') else ""
+    mk.add(types.InlineKeyboardButton(ask_mark + "❓ پرسیده شود", callback_data="dest|ask"))
+    mk.row(btn('gd', "☁️ Google Drive"), btn('s3', "🗄 Railway S3"))
+    mk.add(btn('github', "🐙 GitHub"))
+    mk.add(types.InlineKeyboardButton("🔙 بازگشت", callback_data="set|back"))
     return mk
 
 
